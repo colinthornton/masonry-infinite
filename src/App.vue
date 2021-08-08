@@ -1,29 +1,45 @@
 <template>
-  <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png" />
-    <HelloWorld msg="Welcome to Your Vue.js + TypeScript App" />
-  </div>
+  <main>
+    <img v-for="img in images" :key="img.key" :src="img.src" />
+  </main>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
-import HelloWorld from "./components/HelloWorld.vue";
 
-@Component({
-  components: {
-    HelloWorld,
-  },
-})
-export default class App extends Vue {}
+const randInt = ({ min = 0, max = 1 }): number =>
+  Math.floor(Math.random() * (max - min + 1) + min);
+
+@Component
+export default class App extends Vue {
+  images = Array.from({ length: 10 }, (_, i) => ({
+    key: i,
+    src: `https://source.unsplash.com/random/${randInt({
+      min: 100,
+      max: 500,
+    })}`,
+  }));
+}
 </script>
 
 <style lang="scss">
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+html,
+body {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+main {
+  width: 320px;
+  height: 568px;
+  border: 1px solid black;
+
+  padding: 15px;
+}
+
+img {
+  max-width: 40%;
 }
 </style>
