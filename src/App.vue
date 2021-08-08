@@ -1,9 +1,7 @@
 <template>
   <main
-    v-infinite-scroll="appendImages"
-    infinite-scroll-disabled="isLoadingImages"
-    infinite-scroll-distance="200"
-    :style="`--column-width: ${columnWidth}px; --gutter: ${gutter}px`"
+    :style="`--column-width: ${columnWidth}px; --gutter: ${gutter}px;`"
+    @scroll="handleScroll"
   >
     <section class="list">
       <img
@@ -23,17 +21,11 @@
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
 import Masonry from "masonry-layout";
-// @ts-expect-error no types
-import infiniteScroll from "vue-infinite-scroll";
 
 const randInt = ({ min = 0, max = 1 }): number =>
   Math.floor(Math.random() * (max - min + 1) + min);
 
-@Component({
-  directives: {
-    infiniteScroll,
-  },
-})
+@Component
 export default class App extends Vue {
   masonry?: Masonry;
   readonly columnWidth = 140;
@@ -78,7 +70,15 @@ export default class App extends Vue {
     }
   }
 
-  appendImages(): void {
+  handleScroll(e: Event): void {
+    const { scrollHeight, scrollTop, clientHeight } = e.target as HTMLElement;
+    const offsetFromBottom = scrollHeight - scrollTop - clientHeight;
+    if (offsetFromBottom <= 200) {
+      this.appendImages();
+    }
+  }
+
+  private appendImages(): void {
     this.appendedCount = Math.min(
       this.layoutCompleteCount + this.pageSize,
       this.images.length
@@ -131,6 +131,8 @@ main {
   color: blue;
   left: 0;
   bottom: 0;
+  margin: 0;
+  text-align: center;
   z-index: 10;
 }
 </style>
