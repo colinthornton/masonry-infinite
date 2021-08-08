@@ -1,13 +1,20 @@
 <template>
-  <main>
-    <section class="list" :class="{ loaded: allImgsLoaded }">
+  <main
+    v-infinite-scroll="appendImages"
+    infinite-scroll-disabled="isLoadingImages"
+    infinite-scroll-distance="200"
+  >
+    <section class="list">
       <img
-        v-for="img in images"
+        v-for="(img, i) in appendedImages"
         :key="img.key"
         class="list-item"
+        :class="{ show: i < layoutCompleteCount }"
         :src="img.src"
         @load="handleImgLoad"
+        :style="`--transition-delay: ${(i % pageSize) * 80}ms`"
       />
+      <p v-if="isLoadingImgs" class="loading">Loading...</p>
     </section>
   </main>
 </template>
@@ -15,27 +22,38 @@
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
 import Masonry from "masonry-layout";
+// @ts-expect-error no types
+import infiniteScroll from "vue-infinite-scroll";
 
 const randInt = ({ min = 0, max = 1 }): number =>
   Math.floor(Math.random() * (max - min + 1) + min);
 
-@Component
+@Component({
+  directives: {
+    infiniteScroll,
+  },
+})
 export default class App extends Vue {
-  images = Array.from({ length: 10 }, (_, i) => ({
+  masonry?: Masonry;
+  images = Array.from({ length: 100 }, (_, i) => ({
     key: i,
     src: `https://source.unsplash.com/random/${randInt({
       min: 100,
       max: 500,
-    })}x${randInt({
-      min: 100,
-      max: 500,
     })}`,
   }));
-  masonry?: Masonry;
-  loadEvents: Event[] = [];
 
-  get allImgsLoaded(): boolean {
-    return this.loadEvents.length === this.images.length;
+  readonly pageSize = 10;
+  appendedCount = this.pageSize;
+  loadEventCount = 0;
+  layoutCompleteCount = 0;
+
+  get appendedImages(): { key: number; src: string }[] {
+    return this.images.slice(0, this.appendedCount);
+  }
+
+  get isLoadingImgs(): boolean {
+    return this.loadEventCount < this.appendedCount;
   }
 
   mounted(): void {
@@ -44,14 +62,24 @@ export default class App extends Vue {
       columnWidth: 140,
       gutter: 15,
       initLayout: false,
+      transitionDuration: 0,
     });
   }
 
-  handleImgLoad(e: Event): void {
-    this.loadEvents.push(e);
-    if (this.allImgsLoaded) {
+  handleImgLoad(): void {
+    this.loadEventCount += 1;
+    if (this.loadEventCount === this.appendedCount) {
+      this.masonry?.reloadItems?.();
       this.masonry?.layout?.();
+      this.layoutCompleteCount = this.appendedCount;
     }
+  }
+
+  appendImages(): void {
+    this.appendedCount = Math.min(
+      this.layoutCompleteCount + this.pageSize,
+      this.images.length
+    );
   }
 }
 </script>
@@ -66,6 +94,7 @@ body {
 }
 
 main {
+  position: relative;
   width: 320px;
   height: 568px;
   border: 1px solid black;
@@ -78,17 +107,27 @@ main {
 .list {
   width: 100%;
   min-height: 100%;
-
-  opacity: 0;
-  transition: opacity 200ms;
-  &.loaded {
-    opacity: 1;
-  }
 }
 
 .list-item {
   width: 140px;
   height: auto;
   margin-bottom: 15px;
+
+  opacity: 0;
+  transition: opacity 200ms var(--transition-delay);
+  &.show {
+    opacity: 1;
+  }
+}
+
+.loading {
+  position: absolute;
+  width: 100%;
+  background: pink;
+  color: blue;
+  left: 0;
+  bottom: 0;
+  z-index: 10;
 }
 </style>
