@@ -3,6 +3,7 @@
     v-infinite-scroll="appendImages"
     infinite-scroll-disabled="isLoadingImages"
     infinite-scroll-distance="200"
+    :style="`--column-width: ${columnWidth}px; --gutter: ${gutter}px`"
   >
     <section class="list">
       <img
@@ -10,9 +11,9 @@
         :key="img.key"
         class="list-item"
         :class="{ show: i < layoutCompleteCount }"
+        :style="`--transition-delay: ${(i % pageSize) * 80}ms`"
         :src="img.src"
         @load="handleImgLoad"
-        :style="`--transition-delay: ${(i % pageSize) * 80}ms`"
       />
       <p v-if="isLoadingImgs" class="loading">Loading...</p>
     </section>
@@ -35,6 +36,9 @@ const randInt = ({ min = 0, max = 1 }): number =>
 })
 export default class App extends Vue {
   masonry?: Masonry;
+  readonly columnWidth = 140;
+  readonly gutter = 15;
+
   images = Array.from({ length: 100 }, (_, i) => ({
     key: i,
     src: `https://source.unsplash.com/random/${randInt({
@@ -42,7 +46,6 @@ export default class App extends Vue {
       max: 500,
     })}`,
   }));
-
   readonly pageSize = 10;
   appendedCount = this.pageSize;
   loadEventCount = 0;
@@ -59,15 +62,15 @@ export default class App extends Vue {
   mounted(): void {
     this.masonry = new Masonry(".list", {
       itemSelector: ".list-item",
-      columnWidth: 140,
-      gutter: 15,
+      columnWidth: this.columnWidth,
+      gutter: this.gutter,
       initLayout: false,
       transitionDuration: 0,
     });
   }
 
   handleImgLoad(): void {
-    this.loadEventCount += 1;
+    this.loadEventCount++;
     if (this.loadEventCount === this.appendedCount) {
       this.masonry?.reloadItems?.();
       this.masonry?.layout?.();
@@ -99,8 +102,8 @@ main {
   height: 568px;
   border: 1px solid black;
 
-  padding-top: 15px;
-  padding-left: 15px;
+  padding-top: var(--gutter);
+  padding-left: var(--gutter);
   overflow-y: scroll;
 }
 
@@ -110,9 +113,9 @@ main {
 }
 
 .list-item {
-  width: 140px;
+  width: var(--column-width);
   height: auto;
-  margin-bottom: 15px;
+  margin-bottom: var(--gutter);
 
   opacity: 0;
   transition: opacity 200ms var(--transition-delay);
